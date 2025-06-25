@@ -1,4 +1,3 @@
-
 import * as THREE from './libs/three/three.module.js';
 import { GLTFLoader } from './libs/three/jsm/GLTFLoader.js';
 import { DRACOLoader } from './libs/three/jsm/DRACOLoader.js';
@@ -20,7 +19,7 @@ class App{
 		this.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 500 );
 		this.camera.position.set( 0, 1.6, 0 );
         
-        this.dolly = new THREE.Object3D(  );
+        this.dolly = new THREE.Object3D( );
         this.dolly.position.set(0, 0, 10);
         this.dolly.add( this.camera );
         this.dummyCam = new THREE.Object3D();
@@ -31,6 +30,14 @@ class App{
         
 		const ambient = new THREE.HemisphereLight(0xFFFFFF, 0xAAAAAA, 0.8);
 		this.scene.add(ambient);
+
+        // --- START MODIFICATION 1: ADD RED CUBE ---
+        const cubeGeometry = new THREE.BoxGeometry(1, 1, 1); // Create a 1x1x1 unit cube geometry
+        const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Create a red material
+        this.myCustomCube = new THREE.Mesh(cubeGeometry, cubeMaterial); // Combine geometry and material into a mesh
+        this.myCustomCube.position.set(0, 2, -5); // Position the cube: x=0, y=2 (above ground), z=-5 (in front of start)
+        this.scene.add(this.myCustomCube); // Add the cube to the scene
+        // --- END MODIFICATION 1 ---
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -126,7 +133,7 @@ class App{
                         }
 					}
 				});
-                       
+                        
                 const door1 = college.getObjectByName("LobbyShop_Door__1_");
                 const door2 = college.getObjectByName("LobbyShop_Door__2_");
                 const pos = door1.position.clone().sub(door2.position).multiplyScalar(0.5).add(door2.position);
@@ -238,7 +245,16 @@ class App{
         if (this.proxy === undefined) return;
         
         const wallLimit = 1.3;
-        const speed = 2;
+        const baseSpeed = 2; // Original speed
+
+        // --- START MODIFICATION 2: SPRINT FUNCTIONALITY ---
+        let currentSpeed = baseSpeed; // Declare a variable for current speed
+        // Check if the select button (trigger) on either controller is pressed
+        if (this.selectPressed) {
+            currentSpeed = baseSpeed * 3; // Triple the speed if button is pressed
+        }
+        // --- END MODIFICATION 2 ---
+
 		let pos = this.dolly.position.clone();
         pos.y += 1;
         
@@ -259,7 +275,7 @@ class App{
         }
 		
 		if (!blocked){
-            this.dolly.translateZ(-dt*speed);
+            this.dolly.translateZ(-dt*currentSpeed); // Use currentSpeed here
             pos = this.dolly.getWorldPosition( this.origin );
 		}
 		
@@ -300,7 +316,8 @@ class App{
 	}
 		
     get selectPressed(){
-        return ( this.controllers !== undefined && (this.controllers[0].userData.selectPressed || this.controllers[1].userData.selectPressed) );    
+        // This getter checks if the 'select' (trigger) button on either controller is pressed
+        return ( this.controllers !== undefined && (this.controllers[0].userData.selectPressed || this.controllers[1].userData.selectPressed) );  
     }
     
     showInfoboard( name, info, pos ){
