@@ -26,29 +26,35 @@ class App{
         this.camera.add( this.dummyCam );
         
 		this.scene = new THREE.Scene();
+        // --- MODIFICATION 2 (Updated): SET SCENE BACKGROUND COLOR TO PINK ---
+        this.scene.background = new THREE.Color(0xFFC0CB); // Set background to a light pink color
+        // --- END MODIFICATION 2 (Updated) ---
+
         this.scene.add( this.dolly );
         
 		const ambient = new THREE.HemisphereLight(0xFFFFFF, 0xAAAAAA, 0.8);
 		this.scene.add(ambient);
 
-        // --- START MODIFICATION 1: ADD RED CUBE ---
-        const cubeGeometry = new THREE.BoxGeometry(1, 1, 1); // Create a 1x1x1 unit cube geometry
-        const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Create a red material
-        this.myCustomCube = new THREE.Mesh(cubeGeometry, cubeMaterial); // Combine geometry and material into a mesh
-        this.myCustomCube.position.set(0, 2, -5); // Position the cube: x=0, y=2 (above ground), z=-5 (in front of start)
-        this.scene.add(this.myCustomCube); // Add the cube to the scene
-        // --- END MODIFICATION 1 ---
+        // --- MODIFICATION 1 (Updated): DYNAMIC COLOR CUBE ---
+        const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+        // Initial color for the cube (will be dynamically overridden in render loop)
+        const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); 
+        this.myCustomCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        this.myCustomCube.position.set(0, 2, -5);
+        this.scene.add(this.myCustomCube);
+        // --- END MODIFICATION 1 (Updated) ---
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setPixelRatio( window.devicePixelRatio );
 		this.renderer.setSize( window.innerWidth, window.innerHeight );
 		this.renderer.outputEncoding = THREE.sRGBEncoding;
 		container.appendChild( this.renderer.domElement );
+        
         this.setEnvironment();
 	
         window.addEventListener( 'resize', this.resize.bind(this) );
         
-        this.clock = new THREE.Clock();
+        this.clock = new THREE.Clock(); 
         this.up = new THREE.Vector3(0,1,0);
         this.origin = new THREE.Vector3();
         this.workingVec3 = new THREE.Vector3();
@@ -171,15 +177,12 @@ class App{
         const timeoutId = setTimeout( connectionTimeout, 2000 );
         
         function onSelectStart( event ) {
-        
             this.userData.selectPressed = true;
-        
+            // Removed previous MODIFICATIONS: Sprint (part 1) and Toggleable Light.
         }
 
         function onSelectEnd( event ) {
-        
             this.userData.selectPressed = false;
-        
         }
         
         function onConnected( event ){
@@ -245,16 +248,8 @@ class App{
         if (this.proxy === undefined) return;
         
         const wallLimit = 1.3;
-        const baseSpeed = 2; // Original speed
-
-        // --- START MODIFICATION 2: SPRINT FUNCTIONALITY ---
-        let currentSpeed = baseSpeed; // Declare a variable for current speed
-        // Check if the select button (trigger) on either controller is pressed
-        if (this.selectPressed) {
-            currentSpeed = baseSpeed * 3; // Triple the speed if button is pressed
-        }
-        // --- END MODIFICATION 2 ---
-
+        const currentSpeed = 2; // Speed is constant
+        
 		let pos = this.dolly.position.clone();
         pos.y += 1;
         
@@ -275,7 +270,7 @@ class App{
         }
 		
 		if (!blocked){
-            this.dolly.translateZ(-dt*currentSpeed); // Use currentSpeed here
+            this.dolly.translateZ(-dt*currentSpeed);
             pos = this.dolly.getWorldPosition( this.origin );
 		}
 		
@@ -315,11 +310,6 @@ class App{
         this.dolly.quaternion.copy( quaternion );
 	}
 		
-    get selectPressed(){
-        // This getter checks if the 'select' (trigger) button on either controller is pressed
-        return ( this.controllers !== undefined && (this.controllers[0].userData.selectPressed || this.controllers[1].userData.selectPressed) );  
-    }
-    
     showInfoboard( name, info, pos ){
         if (this.ui === undefined ) return;
         this.ui.position.copy(pos).add( this.workingVec3.set( 0, 1.3, 0 ) );
@@ -343,7 +333,7 @@ class App{
                 moveGaze = (this.gazeController.mode == GazeController.Modes.MOVE);
             }
         
-            if (this.selectPressed || moveGaze){
+            if ( (this.controllers !== undefined && (this.controllers[0].userData.selectPressed || this.controllers[1].userData.selectPressed)) || moveGaze){
                 this.moveDolly(dt);
                 if (this.boardData){
                     const scene = this.scene;
@@ -371,6 +361,15 @@ class App{
             this.resize();
             this.immersive = this.renderer.xr.isPresenting;
         }
+
+        // --- NEW MODIFICATION 3: DYNAMIC CUBE COLOR CHANGE ---
+        if (this.myCustomCube) {
+            const time = this.clock.getElapsedTime();
+            // Cycle hue from 0 to 1 over 10 seconds (adjust 0.1 for speed)
+            const hue = (time * 0.1) % 1; 
+            this.myCustomCube.material.color.setHSL(hue, 1.0, 0.5); // Saturation 100%, Lightness 50%
+        }
+        // --- END NEW MODIFICATION 3 ---
         
         this.stats.update();
 		this.renderer.render(this.scene, this.camera);
