@@ -26,23 +26,24 @@ class App{
         this.camera.add( this.dummyCam );
         
 		this.scene = new THREE.Scene();
-        // --- MODIFICATION 2 (Updated): SET SCENE BACKGROUND COLOR TO PINK ---
-        this.scene.background = new THREE.Color(0xFFC0CB); // Set background to a light pink color
-        // --- END MODIFICATION 2 (Updated) ---
+        // --- MODIFICATION: PINK BACKGROUND REMOVED ---
+        // this.scene.background = new THREE.Color(0xFFC0CB); // This line is now commented out/removed
+        // The environment map will now serve as the background
+        // --- END MODIFICATION ---
 
         this.scene.add( this.dolly );
         
 		const ambient = new THREE.HemisphereLight(0xFFFFFF, 0xAAAAAA, 0.8);
 		this.scene.add(ambient);
 
-        // --- MODIFICATION 1 (Updated): DYNAMIC COLOR CUBE ---
+        // --- MODIFICATION: DYNAMIC COLOR AND ROTATION CUBE ---
         const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
         // Initial color for the cube (will be dynamically overridden in render loop)
         const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); 
         this.myCustomCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
         this.myCustomCube.position.set(0, 2, -5);
         this.scene.add(this.myCustomCube);
-        // --- END MODIFICATION 1 (Updated) ---
+        // --- END MODIFICATION ---
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -50,7 +51,7 @@ class App{
 		this.renderer.outputEncoding = THREE.sRGBEncoding;
 		container.appendChild( this.renderer.domElement );
         
-        this.setEnvironment();
+        this.setEnvironment(); // This loads the HDR environment map which will now be visible
 	
         window.addEventListener( 'resize', this.resize.bind(this) );
         
@@ -92,6 +93,9 @@ class App{
           pmremGenerator.dispose();
 
           self.scene.environment = envMap;
+          // IMPORTANT: If you want the environment map to show as the background,
+          // ensure this.scene.background is NOT explicitly set to a color.
+          // It will default to using scene.environment as the background.
 
         }, undefined, (err)=>{
             console.error( 'An error occurred setting the environment');
@@ -362,14 +366,16 @@ class App{
             this.immersive = this.renderer.xr.isPresenting;
         }
 
-        // --- NEW MODIFICATION 3: DYNAMIC CUBE COLOR CHANGE ---
+        // --- MODIFICATION: DYNAMIC CUBE COLOR CHANGE AND ROTATION ---
         if (this.myCustomCube) {
             const time = this.clock.getElapsedTime();
-            // Cycle hue from 0 to 1 over 10 seconds (adjust 0.1 for speed)
+            // Color change
             const hue = (time * 0.1) % 1; 
-            this.myCustomCube.material.color.setHSL(hue, 1.0, 0.5); // Saturation 100%, Lightness 50%
+            this.myCustomCube.material.color.setHSL(hue, 1.0, 0.5); 
+            // Rotation on Y-axis
+            this.myCustomCube.rotation.y = time * 0.5; // Rotates at a speed of 0.5 radians per second
         }
-        // --- END NEW MODIFICATION 3 ---
+        // --- END MODIFICATION ---
         
         this.stats.update();
 		this.renderer.render(this.scene, this.camera);
